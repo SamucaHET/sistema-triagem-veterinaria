@@ -868,7 +868,7 @@ const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
             "Authorization": "Bearer " + token
           },
           body: JSON.stringify({
-            model: "HuggingFaceH4/zephyr-7b-beta", // <-- Modelo atualizado e garantido para chat
+            model: "mistralai/Mistral-7B-Instruct-v0.3",
             messages: [
               { role: "system", content: "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão. Responda sempre em português brasileiro, de forma direta, técnica e concisa." },
               { role: "user", content: prompt }
