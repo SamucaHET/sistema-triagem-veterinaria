@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Triagem Veterinária</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #e8f5e9 0%, #f4f6f9 50%, #e3f2fd 100%);
+      min-height: 100vh;
+    }
+    .header-icon {
+      font-size: 2.5rem;
+      color: #2e7d32;
+    }
+    .card {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border: none;
+      border-radius: 12px;
+    }
+    .result {
+      white-space: pre-line;
+      border-radius: 8px;
+    }
+    .btn-success {
+      background-color: #2e7d32;
+      border-color: #2e7d32;
+    }
+    .btn-success:hover {
+      background-color: #1b5e20;
+      border-color: #1b5e20;
+    }
+    .spinner-border {
+      width: 1.2rem;
+      height: 1.2rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #66bb6a;
+      box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+    }
+    .urgencia-alta {
+      border-left: 5px solid #dc3545;
+    }
+    .urgencia-media {
+      border-left: 5px solid #ffc107;
+    }
+    .urgencia-baixa {
+      border-left: 5px solid #28a745;
+    }
+    .token-section {
+      background: #fff3cd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    .footer-text {
+      font-size: 0.85rem;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-4 mb-5">
+    <div class="text-center mb-4">
+      <i class="bi bi-heart-pulse header-icon"></i>
+      <h1 class="text-success">Sistema de Triagem Veterinária</h1>
+      <p class="text-muted">Ferramenta digital para auxiliar médicos veterinários na triagem inicial de animais de pequeno porte.</p>
+    </div>
+
+    <!-- Token Configuration -->
+    <div class="card p-3 mb-3">
+      <div class="token-section">
+        <label for="hfToken" class="form-label fw-bold">
+          <i class="bi bi-key"></i> Token da Hugging Face:
+        </label>
+        <div class="input-group">
+          <input type="password" id="hfToken" class="form-control" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx">
+          <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()">
+            <i class="bi bi-eye" id="tokenEyeIcon"></i>
+          </button>
+        </div>
+        <small class="text-muted">
+          Insira seu token para habilitar a consulta à IA. Obtenha em
+          <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a>.
+        </small>
+      </div>
+    </div>
+
+    <!-- Main Form -->
+    <div class="card p-4 mt-3">
+      <div class="row">
+        <div class="col-md-6">
+          <label for="animal" class="form-label fw-bold">
+            <i class="bi bi-tag"></i> Nome do Animal:
+          </label>
+          <input type="text" id="animal" class="form-control" placeholder="Digite o nome do paciente">
+        </div>
+        <div class="col-md-6">
+          <label for="especie" class="form-label fw-bold">
+            <i class="bi bi-heart"></i> Espécie:
+          </label>
+          <select id="especie" class="form-select">
+            <option value="cao">Cão</option>
+            <option value="gato">Gato</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="sintoma" class="form-label fw-bold mt-3">
+        <i class="bi bi-clipboard2-pulse"></i> Sintoma principal:
+      </label>
+      <select id="sintoma" class="form-select">
+        <option value="">-- Escolha um sintoma --</option>
+        <!-- Gastrointestinais -->
+        <optgroup label="Gastrointestinais">
+          <option value="diarreia">Diarreia</option>
+          <option value="vomito">Vômito</option>
+          <option value="sangue_fezes">Sangue nas fezes</option>
+          <option value="sangue_vomito">Sangue no vômito</option>
+          <option value="dor_abdominal">Dor abdominal</option>
+          <option value="distensao_abdominal">Distensão abdominal</option>
+          <option value="perda_apetite">Perda de apetite</option>
+          <option value="dificuldade_mastigar">Dificuldade para mastigar</option>
+          <option value="dificuldade_engolir">Dificuldade para engolir</option>
+          <option value="sialorreia">Salivação excessiva</option>
+          <option value="halitose">Mau hálito</option>
+        </optgroup>
+        <!-- Respiratórios -->
+        <optgroup label="Respiratórios">
+          <option value="tosse">Tosse</option>
+          <option value="espirros">Espirros</option>
+          <option value="secrecao_nasal">Secreção nasal</option>
+          <option value="dispneia">Dificuldade respiratória</option>
+          <option value="tosse_canil">Tosse do canil</option>
+        </optgroup>
+        <!-- Dermatológicos -->
+        <optgroup label="Dermatológicos">
+          <option value="coceira">Coceira</option>
+          <option value="lesoes_cutaneas">Lesões cutâneas</option>
+          <option value="alopecia">Perda de pelos</option>
+          <option value="prurido_auricular">Coceira nas orelhas</option>
+          <option value="odor_auricular">Odor nas orelhas</option>
+        </optgroup>
+        <!-- Urinários -->
+        <optgroup label="Urinários">
+          <option value="urina_frequente">Urina frequente</option>
+          <option value="sangue_urina">Sangue na urina</option>
+          <option value="poliuria">Poliúria</option>
+        </optgroup>
+        <!-- Neurológicos -->
+        <optgroup label="Neurológicos">
+          <option value="convulsao">Convulsão</option>
+          <option value="tremores">Tremores</option>
+          <option value="paralisia">Paralisia</option>
+          <option value="desorientacao">Desorientação</option>
+          <option value="desmaio">Desmaio</option>
+        </optgroup>
+        <!-- Sistêmicos / Gerais -->
+        <optgroup label="Sistêmicos / Gerais">
+          <option value="febre">Febre</option>
+          <option value="apatia">Apatia</option>
+          <option value="letargia">Letargia</option>
+          <option value="perda_peso">Perda de peso</option>
+          <option value="ganho_peso">Ganho de peso</option>
+          <option value="obesidade">Obesidade</option>
+          <option value="sede_excessiva">Sede excessiva</option>
+          <option value="polidipsia">Polidipsia</option>
+          <option value="hipotermia">Hipotermia</option>
+          <option value="hipertermia">Hipertermia</option>
+          <option value="anemia">Anemia</option>
+        </optgroup>
+        <!-- Oftalmológicos -->
+        <optgroup label="Oftalmológicos">
+          <option value="secrecao_ocular">Secreção ocular</option>
+        </optgroup>
+        <!-- Musculoesqueléticos -->
+        <optgroup label="Musculoesqueléticos">
+          <option value="claudicacao">Claudicação</option>
+        </optgroup>
+        <!-- Cardiovasculares -->
+        <optgroup label="Cardiovasculares">
+          <option value="taquicardia">Taquicardia</option>
+          <option value="bradicardia">Bradicardia</option>
+          <option value="cianose">Mucosas azuladas</option>
+        </optgroup>
+        <!-- Hepáticos -->
+        <optgroup label="Hepáticos">
+          <option value="ictericia">Icterícia</option>
+        </optgroup>
+        <!-- Comportamentais -->
+        <optgroup label="Comportamentais">
+          <option value="ansiedade">Ansiedade</option>
+          <option value="agressividade">Agressividade</option>
+        </optgroup>
+        <!-- Doenças Infecciosas Comuns -->
+        <optgroup label="Doenças Infecciosas Comuns">
+          <option value="parvovirose">Sinais de Parvovirose</option>
+          <option value="cinomose">Sinais de Cinomose</option>
+          <option value="leptospirose">Sinais de Leptospirose</option>
+        </optgroup>
+      </select>
+
+      <label for="observacao" class="form-label fw-bold mt-3">
+        <i class="bi bi-pencil-square"></i> Observações:
+      </label>
+      <textarea id="observacao" class="form-control" rows="3" placeholder="Descreva detalhes adicionais: duração dos sintomas, histórico, medicações, vacinação..."></textarea>
+
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-success flex-grow-1" onclick="gerarDiagnostico()" id="btnGerar">
+          <i class="bi bi-search"></i> Gerar Hipótese
+        </button>
+        <button class="btn btn-outline-secondary" onclick="resetarFormulario()">
+          <i class="bi bi-arrow-counterclockwise"></i> Resetar
+        </button>
+      </div>
+
+      <!-- Local Diagnosis Result -->
+      <div id="resultado" class="alert alert-info mt-3 result" style="display:none;"></div>
+
+      <!-- AI Opinion Result -->
+      <div id="opiniaoIA" class="alert alert-warning mt-3 result" style="display:none;"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="text-center mt-4 footer-text">
+      <i class="bi bi-info-circle"></i>
+      Este sistema é apenas uma ferramenta auxiliar de triagem. Não substitui o diagnóstico clínico completo.
+      <br>Sempre realize exames complementares e avaliação clínica detalhada.
+    </div>
+  </div>
+
+  <script>
+    // ───────────────────────────────────────────────
+    //  Database of symptoms with diagnoses and urgency
+    // ───────────────────────────────────────────────
+    const sintomasDB = {
+      // Gastrointestinais
+      tosse: {
+        diagnostico: "Possível infecção respiratória, bronquite, traqueíte ou tosse do canil.",
+        urgencia: "media",
+        exames: "Radiografia torácica, hemograma completo, lavado traqueal.",
+        observacoes: {
+          "febre": "Pode indicar pneumonia bacteriana. Considerar antibioticoterapia.",
+          "secreção": "Secreção nasal associada sugere infecção viral (cinomose, parainfluenza).",
+          "noturna": "Tosse predominantemente noturna pode indicar insuficiência cardíaca.",
+          "exercício": "Tosse após exercício sugere colapso de traqueia ou doença cardíaca."
+        }
+      },
+      diarreia: {
+        diagnostico: "Parasitas intestinais, intolerância alimentar, gastroenterite ou infecção viral.",
+        urgencia: "media",
+        exames: "Exame de fezes (coproparasitológico), hemograma, perfil bioquímico.",
+        observacoes: {
+          "sangue": "Atenção: possível gastroenterite hemorrágica ou parvovirose. Urgência alta.",
+          "filhote": "Em filhotes, investigar parvovirose e verminoses com urgência.",
+          "crônica": "Diarreia crônica (>2 semanas) sugere doença inflamatória intestinal ou insuficiência pancreática.",
+          "muco": "Presença de muco sugere colite ou parasitas como Giardia."
+        }
+      },
+      vomito: {
+        diagnostico: "Intoxicação alimentar, gastrite, corpo estranho ou pancreatite.",
+        urgencia: "media",
+        exames: "Radiografia abdominal, ultrassonografia, hemograma, bioquímico.",
+        observacoes: {
+          "corpo estranho": "Sugestão: investigar obstrução intestinal com radiografia contrastada.",
+          "sangue": "Vômito com sangue (hematêmese) indica úlcera gástrica ou intoxicação grave.",
+          "persistente": "Vômitos persistentes (>24h) requerem fluidoterapia e investigação urgente.",
+          "bile": "Vômito bilioso em jejum pode indicar síndrome de vômito bilioso."
+        }
+      },
+      sangue_fezes: {
+        diagnostico: "Gastroenterite hemorrágica, parvovirose, parasitas ou intoxicação.",
+        urgencia: "alta",
+        exames: "Hemograma urgente, teste rápido parvovirose, coproparasitológico, bioquímico.",
+        observacoes: {
+          "filhote": "Suspeita forte de parvovirose. Isolamento imediato e fluidoterapia.",
+          "escuro": "Sangue escuro (melena) indica sangramento no trato GI superior.",
+          "vivo": "Sangue vivo (hematoquezia) sugere problema no trato GI inferior ou colite."
+        }
+      },
+      sangue_vomito: {
+        diagnostico: "Úlcera gástrica, intoxicação por rodenticidas, coagulopatia ou corpo estranho perfurante.",
+        urgencia: "alta",
+        exames: "Hemograma urgente, perfil de coagulação, radiografia abdominal, endoscopia.",
+        observacoes: {
+          "veneno": "Suspeita de intoxicação por rodenticidas. Administrar vitamina K imediatamente.",
+          "recorrente": "Hematêmese recorrente sugere úlcera gástrica crônica ou neoplasia."
+        }
+      },
+      dor_abdominal: {
+        diagnostico: "Pancreatite, obstrução intestinal, peritonite ou torção gástrica.",
+        urgencia: "alta",
+        exames: "Ultrassonografia abdominal, radiografia, lipase pancreática, hemograma.",
+        observacoes: {
+          "inchaço": "Abdômen distendido com dor pode indicar torção gástrica (emergência!).",
+          "posição de prece": "Posição de prece (membros anteriores no chão) é clássica de pancreatite.",
+          "gordurosa": "Histórico de alimentação gordurosa recente sugere pancreatite aguda."
+        }
+      },
+      distensao_abdominal: {
+        diagnostico: "Ascite, torção gástrica (dilatação-vólvulo), obstrução intestinal ou gestação.",
+        urgencia: "alta",
+        exames: "Radiografia abdominal urgente, ultrassonografia, paracentese diagnóstica.",
+        observacoes: {
+          "rápido": "Distensão rápida em raças grandes sugere torção gástrica — emergência cirúrgica!",
+          "líquido": "Acúmulo de líquido (ascite) sugere insuficiência cardíaca direita ou doença hepática.",
+          "timpanismo": "Som timpânico à percussão indica acúmulo de gás — possível dilatação gástrica."
+        }
+      },
+      perda_apetite: {
+        diagnostico: "Pode indicar problemas gastrointestinais, sistêmicos, dor oral ou cinomose.",
+        urgencia: "media",
+        exames: "Hemograma, perfil bioquímico completo, exame da cavidade oral.",
+        observacoes: {
+          "perda de peso": "Sugestão: investigar doenças metabólicas, neoplasia ou insuficiência renal.",
+          "febre": "Anorexia com febre sugere infecção sistêmica.",
+          "amarelo": "Mucosas amareladas com anorexia indicam doença hepática."
+        }
+      },
+      dificuldade_mastigar: {
+        diagnostico: "Doença periodontal, fratura dentária, tumor oral ou miosite mastigatória.",
+        urgencia: "media",
+        exames: "Exame oral sob sedação, radiografia dentária, biópsia se houver massa.",
+        observacoes: {
+          "sangue": "Sangramento oral pode indicar gengivite severa ou tumor.",
+          "inchaço": "Inchaço na face sugere abscesso dentário ou miosite mastigatória."
+        }
+      },
+      dificuldade_engolir: {
+        diagnostico: "Corpo estranho faríngeo, megaesôfago, esofagite ou massa faríngea.",
+        urgencia: "alta",
+        exames: "Radiografia cervical e torácica, esofagograma contrastado, endoscopia.",
+        observacoes: {
+          "regurgitação": "Regurgitação (sem esforço) diferente de vômito — sugere megaesôfago.",
+          "tosse": "Disfagia com tosse pode indicar fístula traqueoesofágica."
+        }
+      },
+      sialorreia: {
+        diagnostico: "Náusea, corpo estranho oral, intoxicação, doença periodontal ou raiva.",
+        urgencia: "media",
+        exames: "Exame oral completo, radiografia, hemograma, verificar histórico vacinal.",
+        observacoes: {
+          "espuma": "Salivação espumosa sugere intoxicação ou crise convulsiva.",
+          "vacina": "Se vacinação antirrábica não está em dia, considerar raiva como diagnóstico diferencial."
+        }
+      },
+      halitose: {
+        diagnostico: "Doença periodontal, gengivite, tártaro severo ou insuficiência renal.",
+        urgencia: "baixa",
+        exames: "Exame oral, perfil renal (ureia, creatinina), hemograma.",
+        observacoes: {
+          "urina": "Hálito urêmico (cheiro de urina) indica insuficiência renal — urgência alta.",
+          "dente": "Dentes com mobilidade ou tártaro severo necessitam de profilaxia dental."
+        }
+      },
+      // Respiratórios
+      espirros: {
+        diagnostico: "Rinite alérgica, infecção viral, corpo estranho nasal ou tumor nasal.",
+        urgencia: "baixa",
+        exames: "Rinoscopia, radiografia de crânio, cultura nasal.",
+        observacoes: {
+          "sangue": "Epistaxe (sangue nasal) sugere corpo estranho, tumor nasal ou erliquiose.",
+          "unilateral": "Secreção unilateral sugere corpo estranho ou neoplasia nasal.",
+          "crônico": "Espirros crônicos (>3 semanas) necessitam investigação com rinoscopia."
+        }
+      },
+      secrecao_nasal: {
+        diagnostico: "Infecção respiratória, cinomose (em cães), rinotraqueíte (em gatos) ou alergia.",
+        urgencia: "media",
+        exames: "Radiografia torácica, hemograma, teste de cinomose, cultura e antibiograma.",
+        observacoes: {
+          "purulenta": "Secreção purulenta (amarelada/esverdeada) sugere infecção bacteriana secundária.",
+          "bilateral": "Secreção bilateral sugere infecção sistêmica ou alergia."
+        }
+      },
+      dispneia: {
+        diagnostico: "Edema pulmonar, pneumonia, efusão pleural, asma felina ou insuficiência cardíaca.",
+        urgencia: "alta",
+        exames: "Radiografia torácica urgente, oximetria, gasometria, ecocardiograma.",
+        observacoes: {
+          "cianose": "Mucosas azuladas indicam hipoxemia grave — oxigenoterapia imediata!",
+          "posição": "Posição ortopneica (pescoço estendido, cotovelos abduzidos) indica obstrução grave.",
+          "gato": "Em gatos, considerar asma felina ou cardiomiopatia hipertrófica."
+        }
+      },
+      tosse_canil: {
+        diagnostico: "Traqueobronquite infecciosa canina (Bordetella bronchiseptica, parainfluenza).",
+        urgencia: "media",
+        exames: "Geralmente clínico. Radiografia torácica se houver complicação. PCR se necessário.",
+        observacoes: {
+          "filhote": "Filhotes podem evoluir para pneumonia. Monitorar de perto.",
+          "vacinado": "Mesmo vacinados, podem contrair formas mais leves. Tratamento de suporte."
+        }
+      },
+      // Dermatológicos
+      coceira: {
+        diagnostico: "Dermatite alérgica (atopia, DAPP), ectoparasitas (pulgas, sarna) ou infecção fúngica.",
+        urgencia: "baixa",
+        exames: "Raspado cutâneo, cultura fúngica, citologia de pele, teste alérgico.",
+        observacoes: {
+          "lesão": "Sugestão: investigar sarna demodécica ou infecção cutânea secundária.",
+          "pulga": "Dermatite alérgica à picada de pulga (DAPP) — tratar com antipulgas.",
+          "orelha": "Coceira nas orelhas associada sugere otite alérgica ou ácaros auriculares.",
+          "sazonal": "Prurido sazonal sugere atopia (alergia ambiental)."
+        }
+      },
+      lesoes_cutaneas: {
+        diagnostico: "Dermatofitose (micose), piodermite, dermatite alérgica ou leishmaniose.",
+        urgencia: "media",
+        exames: "Raspado cutâneo, cultura fúngica, citologia, biópsia se necessário.",
+        observacoes: {
+          "circular": "Lesões circulares com alopecia sugerem dermatofitose (micose) — zoonose.",
+          "pústula": "Pústulas sugerem piodermite bacteriana — antibioticoterapia sistêmica.",
+          "crostas": "Crostas em pontas de orelha e focinho podem indicar leishmaniose."
+        }
+      },
+      alopecia: {
+        diagnostico: "Dermatofitose, sarna demodécica, hipotireoidismo ou hiperadrenocorticismo.",
+        urgencia: "baixa",
+        exames: "Raspado cutâneo, perfil tireoidiano (T4, TSH), teste de cortisol.",
+        observacoes: {
+          "simétrica": "Alopecia bilateral simétrica sugere causa endócrina (hipotireoidismo, Cushing).",
+          "focal": "Alopecia focal pode ser dermatofitose — realizar cultura fúngica.",
+          "prurido": "Alopecia com prurido sugere causa alérgica ou parasitária."
+        }
+      },
+      prurido_auricular: {
+        diagnostico: "Otite externa (bacteriana, fúngica ou parasitária), ácaros auriculares (Otodectes).",
+        urgencia: "baixa",
+        exames: "Otoscopia, citologia auricular, cultura e antibiograma se recorrente.",
+        observacoes: {
+          "secreção escura": "Secreção escura e seca sugere Otodectes cynotis (ácaros).",
+          "odor": "Odor fétido indica infecção bacteriana ou fúngica (Malassezia).",
+          "recorrente": "Otites recorrentes investigar alergia alimentar como causa base."
+        }
+      },
+      odor_auricular: {
+        diagnostico: "Otite bacteriana ou fúngica (Malassezia), geralmente secundária a alergia.",
+        urgencia: "media",
+        exames: "Citologia auricular, cultura e antibiograma, otoscopia.",
+        observacoes: {
+          "inchaço": "Edema no canal auditivo pode indicar otite média — considerar imagem avançada.",
+          "dor": "Dor intensa sugere otite média/interna — tratamento sistêmico necessário."
+        }
+      },
+      // Urinários
+      urina_frequente: {
+        diagnostico: "Infecção do trato urinário (ITU), cistite, diabetes mellitus ou cálculos urinários.",
+        urgencia: "media",
+        exames: "Urinálise completa, urocultura, ultrassonografia abdominal, glicemia.",
+        observacoes: {
+          "sangue": "Hematúria com polaciúria sugere cistite ou cálculos vesicais.",
+          "dor": "Disúria (dor ao urinar) indica inflamação ou obstrução parcial.",
+          "sede": "Poliúria + polidipsia investigar diabetes mellitus ou doença renal."
+        }
+      },
+      sangue_urina: {
+        diagnostico: "Infecção urinária grave, cálculos urinários, cistite hemorrágica ou neoplasia vesical.",
+        urgencia: "alta",
+        exames: "Urinálise urgente, urocultura, ultrassonografia vesical, hemograma.",
+        observacoes: {
+          "macho": "Em machos, considerar hiperplasia prostática ou prostatite.",
+          "obstrução": "Se não consegue urinar — obstrução uretral é emergência! Principalmente em gatos machos."
+        }
+      },
+      poliuria: {
+        diagnostico: "Diabetes mellitus, insuficiência renal crônica, hiperadrenocorticismo ou piometra.",
+        urgencia: "media",
+        exames: "Glicemia, perfil renal, urinálise (densidade urinária), cortisol basal.",
+        observacoes: {
+          "sede": "Poliúria + polidipsia (PU/PD) — investigar causas endócrinas e renais.",
+          "fêmea": "Em fêmeas não castradas, PU/PD pode indicar piometra — urgência alta!"
+        }
+      },
+      // Neurológicos
+      convulsao: {
+        diagnostico: "Epilepsia idiopática, intoxicação, cinomose, encefalite ou hipoglicemia.",
+        urgencia: "alta",
+        exames: "Hemograma, glicemia, perfil hepático, exame neurológico, RM craniana se possível.",
+        observacoes: {
+          "primeira vez": "Primeira convulsão: estabilizar e investigar causa base.",
+          "repetição": "Status epilepticus (convulsões contínuas) — emergência com diazepam IV!",
+          "veneno": "Suspeita de intoxicação: investigar organofosforados, metaldeído, rodenticidas.",
+          "filhote": "Em filhotes, considerar hipoglicemia, shunt portossistêmico ou cinomose."
+        }
+      },
+      tremores: {
+        diagnostico: "Hipoglicemia, intoxicação, dor, hipotermia ou doença neurológica.",
+        urgencia: "media",
+        exames: "Glicemia de urgência, temperatura retal, hemograma, exame neurológico.",
+        observacoes: {
+          "filhote": "Tremores em filhotes — verificar glicemia imediatamente (hipoglicemia neonatal).",
+          "veneno": "Tremores musculares intensos sugerem intoxicação (organofosforados, metaldeído)."
+        }
+      },
+      paralisia: {
+        diagnostico: "Doença do disco intervertebral (DDIV), trauma espinal, embolia fibrocartilaginosa ou polirradiculoneurite.",
+        urgencia: "alta",
+        exames: "Exame neurológico completo, radiografia espinal, mielografia ou RM.",
+        observacoes: {
+          "súbita": "Paralisia súbita de membros posteriores — suspeita de DDIV ou embolia — emergência!",
+          "progressiva": "Paralisia progressiva ascendente sugere polirradiculoneurite (paralisia do coonhound).",
+          "dor": "Paralisia com dor sugere compressão medular — repouso absoluto e avaliação cirúrgica."
+        }
+      },
+      desorientacao: {
+        diagnostico: "Encefalopatia hepática, vestibular central/periférica, intoxicação ou tumor cerebral.",
+        urgencia: "alta",
+        exames: "Exame neurológico, perfil hepático (amônia sérica), hemograma, RM craniana.",
+        observacoes: {
+          "circular": "Andar em círculos sugere lesão vestibular ou intracraniana.",
+          "cabeça inclinada": "Head tilt sugere síndrome vestibular periférica ou central.",
+          "idoso": "Em cães idosos, considerar síndrome vestibular geriátrica (geralmente benigna)."
+        }
+      },
+      desmaio: {
+        diagnostico: "Síncope cardíaca, arritmia, hipoglicemia ou epilepsia.",
+        urgencia: "alta",
+        exames: "Eletrocardiograma, ecocardiograma, glicemia, monitoramento Holter.",
+        observacoes: {
+          "exercício": "Síncope durante exercício sugere doença cardíaca ou arritmia.",
+          "rápido": "Recuperação rápida sugere síncope vasovagal; lenta sugere convulsão."
+        }
+      },
+      // Sistêmicos / Gerais
+      febre: {
+        diagnostico: "Infecção bacteriana, viral, erliquiose, leishmaniose ou doença autoimune.",
+        urgencia: "media",
+        exames: "Hemograma completo, hemocultura, teste rápido de erliquiose, perfil bioquímico.",
+        observacoes: {
+          "tosse": "Possível bronquite ou pneumonia bacteriana.",
+          "carrapato": "Histórico de carrapatos — investigar erliquiose, babesiose ou anaplasmose.",
+          "articulação": "Febre com dor articular sugere poliartrite imunomediada ou erliquiose."
+        }
+      },
+      apatia: {
+        diagnostico: "Febre, dor, anemia, depressão ou doença sistêmica grave.",
+        urgencia: "media",
+        exames: "Hemograma, perfil bioquímico, temperatura retal, exame clínico completo.",
+        observacoes: {
+          "palidez": "Pode indicar anemia severa — verificar hematócrito com urgência.",
+          "icterícia": "Mucosas amareladas com apatia sugerem doença hepática ou hemolítica.",
+          "filhote": "Filhote apático pode indicar hipoglicemia, parvovirose ou cinomose."
+        }
+      },
+      letargia: {
+        diagnostico: "Doença sistêmica, dor crônica, anemia, hipotireoidismo ou depressão.",
+        urgencia: "media",
+        exames: "Hemograma, perfil bioquímico, T4 livre, exame clínico completo.",
+        observacoes: {
+          "ganho de peso": "Letargia + ganho de peso sugere hipotireoidismo.",
+          "idoso": "Em animais idosos, investigar dor articular (osteoartrite) ou neoplasia."
+        }
+      },
+      perda_peso: {
+        diagnostico: "Diabetes mellitus, hipertireoidismo (gatos), insuficiência renal, parasitas ou neoplasia.",
+        urgencia: "media",
+        exames: "Perfil bioquímico, glicemia, T4 (gatos), urinálise, coproparasitológico.",
+        observacoes: {
+          "apetite normal": "Perda de peso com apetite normal sugere diabetes, hipertireoidismo ou má absorção.",
+          "apetite reduzido": "Perda de peso com anorexia sugere doença sistêmica grave ou neoplasia.",
+          "gato idoso": "Em gatos idosos, hipertireoidismo é causa comum — dosar T4."
+        }
+      },
+      ganho_peso: {
+        diagnostico: "Hipotireoidismo, hiperadrenocorticismo (Cushing), sedentarismo ou superalimentação.",
+        urgencia: "baixa",
+        exames: "Perfil tireoidiano (T4, TSH), cortisol basal, perfil metabólico.",
+        observacoes: {
+          "pele": "Ganho de peso + alterações cutâneas sugerem hipotireoidismo.",
+          "abdômen": "Abdômen pendular com ganho de peso sugere hiperadrenocorticismo."
+        }
+      },
+      obesidade: {
+        diagnostico: "Superalimentação, sedentarismo, hipotireoidismo ou castração sem ajuste alimentar.",
+        urgencia: "baixa",
+        exames: "Perfil tireoidiano, glicemia, perfil lipídico, avaliação de escore corporal.",
+        observacoes: {
+          "articulação": "Obesidade agrava problemas articulares — plano de emagrecimento é prioridade.",
+          "castrado": "Animais castrados têm metabolismo reduzido — ajustar dieta e exercícios."
+        }
+      },
+      sede_excessiva: {
+        diagnostico: "Diabetes mellitus, insuficiência renal, hiperadrenocorticismo ou piometra.",
+        urgencia: "media",
+        exames: "Glicemia, perfil renal (ureia, creatinina), urinálise, cortisol.",
+        observacoes: {
+          "urina": "PU/PD (poliúria/polidipsia) — investigar diabetes e doença renal.",
+          "fêmea": "Em fêmeas não castradas, piometra é diagnóstico diferencial importante."
+        }
+      },
+      polidipsia: {
+        diagnostico: "Diabetes mellitus, insuficiência renal crônica, hiperadrenocorticismo ou piometra.",
+        urgencia: "media",
+        exames: "Glicemia, perfil renal, urinálise (densidade), cortisol, ultrassonografia.",
+        observacoes: {
+          "urina": "Sempre avaliar junto com volume urinário (PU/PD).",
+          "medicação": "Corticoides e diuréticos podem causar polidipsia iatrogênica."
+        }
+      },
+      hipotermia: {
+        diagnostico: "Choque, sepse, exposição ao frio, hipoglicemia neonatal ou intoxicação.",
+        urgencia: "alta",
+        exames: "Temperatura retal, glicemia, hemograma, lactato, pressão arterial.",
+        observacoes: {
+          "filhote": "Filhotes neonatos — aquecer gradualmente e verificar glicemia.",
+          "choque": "Hipotermia + taquicardia + mucosas pálidas = choque — fluidoterapia urgente!"
+        }
+      },
+      hipertermia: {
+        diagnostico: "Golpe de calor, infecção grave, inflamação sistêmica ou reação a medicamentos.",
+        urgencia: "alta",
+        exames: "Temperatura retal, hemograma, perfil de coagulação, bioquímico, lactato.",
+        observacoes: {
+          "sol": "Exposição ao calor — resfriar ativamente (água morna, ventilação). Não usar água gelada!",
+          "braquicefálico": "Raças braquicefálicas (Buldogue, Pug) têm maior risco de golpe de calor."
+        }
+      },
+      anemia: {
+        diagnostico: "Hemoparasitoses (erliquiose, babesiose), perda sanguínea, anemia hemolítica ou insuficiência renal.",
+        urgencia: "alta",
+        exames: "Hemograma com reticulócitos, teste de Coombs, esfregaço sanguíneo, perfil renal.",
+        observacoes: {
+          "carrapato": "Histórico de carrapatos — investigar erliquiose e babesiose.",
+          "mucosas pálidas": "Mucosas muito pálidas — verificar hematócrito para possível transfusão.",
+          "icterícia": "Anemia + icterícia sugere hemólise — investigar causa imunomediada ou infecciosa."
+        }
+      },
+      // Oftalmológicos
+      secrecao_ocular: {
+        diagnostico: "Conjuntivite, ceratite, úlcera de córnea, cinomose ou entrópio.",
+        urgencia: "media",
+        exames: "Teste de fluoresceína, teste de Schirmer, pressão intraocular, exame oftálmico.",
+        observacoes: {
+          "purulenta": "Secreção purulenta sugere infecção bacteriana — colírio antibiótico.",
+          "bilateral": "Conjuntivite bilateral sugere causa sistêmica (cinomose, alergia).",
+          "dor": "Blefarospasmo (olho fechado com dor) sugere úlcera de córnea — urgência!"
+        }
+      },
+      // Musculoesqueléticos
+      claudicacao: {
+        diagnostico: "Trauma, artrite, displasia coxofemoral, ruptura de ligamento cruzado ou fratura.",
+        urgencia: "media",
+        exames: "Exame ortopédico, radiografia da região afetada, exame neurológico.",
+        observacoes: {
+          "súbita": "Claudicação súbita sugere trauma, fratura ou ruptura ligamentar.",
+          "crônica": "Claudicação crônica em cães grandes sugere displasia ou osteoartrite.",
+          "filhote": "Em filhotes de raças grandes, investigar osteodistrofia ou panosteíte."
+        }
+      },
+      // Cardiovasculares
+      taquicardia: {
+        diagnostico: "Arritmia, insuficiência cardíaca, dor, febre, anemia ou desidratação.",
+        urgencia: "alta",
+        exames: "ECG, ecocardiograma, radiografia torácica, hemograma, pressão arterial.",
+        observacoes: {
+          "sopro": "Sopro cardíaco associado — ecocardiograma para avaliar doença valvar.",
+          "pulso fraco": "Taquicardia + pulso fraco sugere insuficiência cardíaca descompensada."
+        }
+      },
+      bradicardia: {
+        diagnostico: "Bloqueio atrioventricular, hipotermia, hipercalemia ou intoxicação.",
+        urgencia: "alta",
+        exames: "ECG urgente, eletrólitos (potássio), temperatura retal, ecocardiograma.",
+        observacoes: {
+          "desmaio": "Bradicardia com síncope — possível bloqueio AV de alto grau, pode necessitar marca-passo.",
+          "renal": "Bradicardia com doença renal — verificar potássio (hipercalemia pode ser fatal)."
+        }
+      },
+      cianose: {
+        diagnostico: "Hipoxemia grave, edema pulmonar, pneumotórax, cardiopatia congênita ou obstrução de vias aéreas.",
+        urgencia: "alta",
+        exames: "Oximetria, radiografia torácica urgente, gasometria, ecocardiograma.",
+        observacoes: {
+          "dispneia": "Cianose + dispneia = emergência respiratória — oxigenoterapia imediata!",
+          "filhote": "Em filhotes, considerar cardiopatia congênita (PDA, tetralogia de Fallot)."
+        }
+      },
+      // Hepáticos
+      ictericia: {
+        diagnostico: "Doença hepática, hepatite, leptospirose, anemia hemolítica ou obstrução biliar.",
+        urgencia: "alta",
+        exames: "Perfil hepático completo (ALT, FA, bilirrubinas, albumina), hemograma, ultrassonografia, sorologia para leptospirose.",
+        observacoes: {
+          "vômito": "Icterícia + vômito sugere hepatite aguda ou leptospirose.",
+          "escuro": "Urina escura (colúria) confirma hiperbilirrubinemia.",
+          "anemia": "Icterícia + anemia sugere hemólise — investigar causa imunomediada ou infecciosa."
+        }
+      },
+      // Comportamentais
+      ansiedade: {
+        diagnostico: "Ansiedade de separação, fobia a barulhos, socialização inadequada ou dor crônica.",
+        urgencia: "baixa",
+        exames: "Avaliação comportamental, exame clínico (descartar dor), perfil tireoidiano.",
+        observacoes: {
+          "destruição": "Comportamento destrutivo sugere ansiedade de separação — manejo comportamental.",
+          "trovão": "Fobia a trovões/fogos — considerar terapia comportamental e ansiolíticos.",
+          "idoso": "Ansiedade em animais idosos pode indicar disfunção cognitiva."
+        }
+      },
+      agressividade: {
+        diagnostico: "Dor, medo, dominância, doença cerebral ou raiva (se não vacinado).",
+        urgencia: "media",
+        exames: "Exame clínico completo (descartar dor), avaliação comportamental, verificar vacinação antirrábica.",
+        observacoes: {
+          "súbita": "Mudança súbita de comportamento — descartar dor, tumor cerebral ou intoxicação.",
+          "vacina": "Se vacinação antirrábica não está em dia — considerar raiva como diferencial!"
+        }
+      },
+      // Doenças Infecciosas
+      parvovirose: {
+        diagnostico: "Parvovirose canina — gastroenterite viral hemorrágica altamente contagiosa.",
+        urgencia: "alta",
+        exames: "Teste rápido (SNAP parvo), hemograma (leucopenia), bioquímico, radiografia abdominal.",
+        observacoes: {
+          "filhote": "Mais comum em filhotes não vacinados. Isolamento e fluidoterapia agressiva!",
+          "vacinado": "Mesmo vacinados, pode ocorrer em animais imunossuprimidos.",
+          "desidratação": "Desidratação severa é a principal causa de óbito — fluidoterapia IV é essencial."
+        }
+      },
+      cinomose: {
+        diagnostico: "Cinomose canina — doença viral multissistêmica (respiratória, GI, neurológica).",
+        urgencia: "alta",
+        exames: "Teste rápido (SNAP cinomose), hemograma, PCR, exame neurológico.",
+        observacoes: {
+          "neurológico": "Sinais neurológicos (mioclonia, convulsão) indicam fase avançada — prognóstico reservado.",
+          "hiperqueratose": "Hiperqueratose de coxins e focinho é achado clássico de cinomose.",
+          "filhote": "Mais grave em filhotes não vacinados. Tratamento de suporte intensivo."
+        }
+      },
+      leptospirose: {
+        diagnostico: "Leptospirose — doença bacteriana zoonótica que afeta fígado e rins.",
+        urgencia: "alta",
+        exames: "Sorologia (MAT), hemograma, perfil renal e hepático, urinálise.",
+        observacoes: {
+          "icterícia": "Icterícia + insuficiência renal aguda é apresentação clássica.",
+          "água parada": "Histórico de contato com água parada ou enchente aumenta suspeita.",
+          "zoonose": "ZOONOSE — alertar tutores sobre risco de transmissão e medidas de proteção."
+        }
+      }
+    };
+
+    // ───────────────────────────────────────────────
+    //  Urgency labels
+    // ───────────────────────────────────────────────
+    function getUrgenciaLabel(nivel) {
+      switch (nivel) {
+        case "alta": return '<span class="badge bg-danger">URGÊNCIA ALTA</span>';
+        case "media": return '<span class="badge bg-warning text-dark">URGÊNCIA MÉDIA</span>';
+        case "baixa": return '<span class="badge bg-success">URGÊNCIA BAIXA</span>';
+        default: return "";
+      }
+    }
+
+    function getUrgenciaClass(nivel) {
+      switch (nivel) {
+        case "alta": return "urgencia-alta";
+        case "media": return "urgencia-media";
+        case "baixa": return "urgencia-baixa";
+        default: return "";
+      }
+    }
+
+    // ───────────────────────────────────────────────
+    //  Main diagnosis function
+    // ───────────────────────────────────────────────
+    async function gerarDiagnostico() {
+      const sintoma = document.getElementById("sintoma").value;
+      const observacao = document.getElementById("observacao").value.toLowerCase();
+      const animal = document.getElementById("animal").value;
+      const especie = document.getElementById("especie").value;
+      const resultado = document.getElementById("resultado");
+      const opiniaoIA = document.getElementById("opiniaoIA");
+      const btnGerar = document.getElementById("btnGerar");
+
+      if (!sintoma) {
+        resultado.style.display = "block";
+        resultado.className = "alert alert-danger mt-3 result";
+        resultado.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Por favor, selecione um sintoma.';
+        opiniaoIA.style.display = "none";
+        return;
+      }
+
+      const info = sintomasDB[sintoma];
+      if (!info) {
+        resultado.style.display = "block";
+        resultado.className = "alert alert-danger mt-3 result";
+        resultado.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Sintoma não encontrado na base de dados.';
+        opiniaoIA.style.display = "none";
+        return;
+      }
+
+      // Build local diagnosis
+      let diagnosticoTexto = info.diagnostico;
+      let observacoesAdicionais = [];
+
+      // Check observations for keyword matches
+      if (info.observacoes && observacao) {
+        for (const [keyword, texto] of Object.entries(info.observacoes)) {
+          if (observacao.includes(keyword)) {
+            observacoesAdicionais.push(texto);
+          }
+        }
+      }
+
+      // Display local result
+      resultado.style.display = "block";
+      resultado.className = "alert alert-info mt-3 result " + getUrgenciaClass(info.urgencia);
+      resultado.innerHTML =
+        "<strong><i class='bi bi-clipboard2-pulse'></i> Relatório de Triagem</strong>\n\n" +
+        "<strong>Paciente:</strong> " + (animal || "Não informado") +
+        "  |  <strong>Espécie:</strong> " + (especie === "cao" ? "Cão" : "Gato") + "\n" +
+        "<strong>Sintoma:</strong> " + document.getElementById("sintoma").options[document.getElementById("sintoma").selectedIndex].text + "\n\n" +
+        getUrgenciaLabel(info.urgencia) + "\n\n" +
+        "<strong>Hipótese Diagnóstica:</strong>\n" + diagnosticoTexto + "\n\n" +
+        (observacoesAdicionais.length > 0
+          ? "<strong>Observações Relevantes:</strong>\n" + observacoesAdicionais.map(o => "⚠ " + o).join("\n") + "\n\n"
+          : "") +
+        "<strong>Exames Sugeridos:</strong>\n" + info.exames;
+
+      // ───────────────────────────────────────────────
+      //  AI Opinion via Hugging Face Inference API
+      // ───────────────────────────────────────────────
+      const tokenInput = document.getElementById("hfToken");
+      const token = tokenInput ? tokenInput.value.trim() : "";
+      
+      if (!token) {
+        opiniaoIA.style.display = "block";
+        opiniaoIA.className = "alert alert-secondary mt-3 result";
+        opiniaoIA.innerHTML =
+          '<i class="bi bi-robot"></i> <strong>Opinião da IA:</strong>\n' +
+          'Insira seu token da Hugging Face no campo acima para obter a análise complementar da IA.';
+        return;
+      }
+
+      // Show loading
+      opiniaoIA.style.display = "block";
+      opiniaoIA.className = "alert alert-warning mt-3 result";
+      opiniaoIA.innerHTML =
+        '<i class="bi bi-robot"></i> <strong>Consultando IA...</strong>\n' +
+        '<div class="spinner-border text-warning" role="status"><span class="visually-hidden">Carregando...</span></div>' +
+        ' Aguarde, gerando análise complementar...';
+
+      btnGerar.disabled = true;
+
+      const sintomaTexto = document.getElementById("sintoma").options[document.getElementById("sintoma").selectedIndex].text;
+      const especieTexto = especie === "cao" ? "cão" : "gato";
+
+      const prompt =
+        "Contexto: sou médico(a) veterinário(a) responsável pelo caso, consultando um sistema profissional de apoio técnico. Não é orientação para tutor leigo. Um " + especieTexto + " chamado " + (animal || "paciente") +
+        " apresenta o seguinte sintoma principal: " + sintomaTexto + "." +
+        (observacao ? " Observações adicionais: " + observacao + "." : "") +
+        " A hipótese diagnóstica inicial (triagem local) é: " + diagnosticoTexto +
+        "\n\nComo consultor técnico, forneça diretamente, sem recusar e sem apenas sugerir 'procurar um veterinário' (eu sou o veterinário do caso):\n" +
+        "1. Sua opinião técnica sobre a hipótese diagnóstica\n" +
+        "2. Diagnósticos diferenciais adicionais a considerar\n" +
+        "3. Conduta clínica inicial que você adotaria (classes terapêuticas, fluidoterapia, suporte, manejo)\n" +
+        "4. Sinais de alarme que indicam emergência\n\n" +
+        "Responda de forma concisa e profissional, em português.";
+
+      try {
+const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            model: "HuggingFaceH4/zephyr-7b-beta", // <-- Modelo atualizado e garantido para chat
+            messages: [
+              { role: "system", content: "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão. Responda sempre em português brasileiro, de forma direta, técnica e concisa." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 600,
+            temperature: 0.4
+          })
+        });
+
+        if (!resp.ok) {
+          const errorText = await resp.text();
+          let errorMsg = "Erro " + resp.status;
+
+          if (resp.status === 401 || resp.status === 403) {
+            errorMsg = "Token inválido ou sem permissão. Verifique se o token tem a permissão 'Make calls to Inference Providers'.";
+          } else if (resp.status === 404) {
+            errorMsg = "Modelo não disponível. Tente novamente mais tarde.";
+          } else if (resp.status === 422) {
+            errorMsg = "Formato de requisição inválido. Verifique o payload.";
+          } else if (resp.status === 429) {
+            errorMsg = "Limite de requisições atingido. Aguarde um momento e tente novamente.";
+          } else {
+            try {
+              const errJson = JSON.parse(errorText);
+              if (typeof errJson.error === 'string') {
+                errorMsg = errJson.error;
+              } else if (errJson.error && typeof errJson.error === 'object') {
+                errorMsg = errJson.error.message || JSON.stringify(errJson.error);
+              } else if (errJson.message) {
+                errorMsg = errJson.message;
+              }
+            } catch (_) {
+              if (errorText && errorText.length > 0) {
+                errorMsg += ": " + errorText.substring(0, 300);
+              }
+            }
+          }
+
+          opiniaoIA.className = "alert alert-danger mt-3 result";
+          opiniaoIA.innerHTML =
+            '<i class="bi bi-exclamation-triangle"></i> <strong>Erro ao consultar IA:</strong>\n' + errorMsg;
+          btnGerar.disabled = false;
+          return;
+        }
+
+        const data = await resp.json();
+        const iaResponse = data.choices && data.choices[0] && data.choices[0].message
+          ? data.choices[0].message.content
+          : "Resposta inesperada da IA.";
+
+        opiniaoIA.className = "alert alert-warning mt-3 result";
+        opiniaoIA.innerHTML =
+          '<i class="bi bi-robot"></i> <strong>Opinião da IA (Llama 3.1):</strong>\n\n' + iaResponse;
+
+      } catch (e) {
+        opiniaoIA.className = "alert alert-danger mt-3 result";
+        const errDetail = (e && e.message) ? e.message : String(e);
+        opiniaoIA.innerHTML =
+          '<i class="bi bi-exclamation-triangle"></i> <strong>Erro ao consultar IA:</strong>\n' +
+          'Não foi possível conectar ao serviço. Verifique sua conexão e tente novamente.\n' +
+          'Detalhes: ' + errDetail;
+      }
+
+      btnGerar.disabled = false;
+    }
+
+    // ───────────────────────────────────────────────
+    //  Toggle token visibility
+    // ───────────────────────────────────────────────
+    function toggleTokenVisibility() {
+      const tokenInput = document.getElementById("hfToken");
+      const eyeIcon = document.getElementById("tokenEyeIcon");
+      if (tokenInput.type === "password") {
+        tokenInput.type = "text";
+        eyeIcon.className = "bi bi-eye-slash";
+      } else {
+        tokenInput.type = "password";
+        eyeIcon.className = "bi bi-eye";
+      }
+    }
+
+    // ───────────────────────────────────────────────
+    //  Reset form
+    // ───────────────────────────────────────────────
+    function resetarFormulario() {
+      document.getElementById("animal").value = "";
+      document.getElementById("especie").selectedIndex = 0;
+      document.getElementById("sintoma").selectedIndex = 0;
+      document.getElementById("observacao").value = "";
+
+      const resultado = document.getElementById("resultado");
+      const opiniaoIA = document.getElementById("opiniaoIA");
+
+      resultado.style.display = "none";
+      opiniaoIA.style.display = "none";
+      resultado.innerHTML = "";
+      opiniaoIA.innerHTML = "";
+
+      document.getElementById("animal").focus();
+    }
+  </script>
+
+  <script>
+  // Adicionado um delay para não travar a renderização inicial da tela
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      let nomeUsuario = prompt("Bem-vindo ao Triagem Vet! Por favor, digite seu nome para registro de acesso no nosso teste:");
+
+      if (nomeUsuario) {
+        fetch('/log-acesso', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ nome: nomeUsuario })
+        })
+        .then(response => console.log("Acesso registrado pelo servidor."))
+        .catch(error => console.error("Erro ao registrar acesso:", error));
+      }
+    }, 500);
+  });
+  </script>
+</body>
+</html>
