@@ -861,16 +861,16 @@
         "Responda de forma concisa e profissional, em português.";
 
       try {
-        const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
+const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": "Bearer " + token
           },
           body: JSON.stringify({
-            model: "meta-llama/Llama-3.3-70B-Instruct",
+            model: "mistralai/Mistral-7B-Instruct-v0.3",
             messages: [
-              { role: "system", content: "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão, usado por médicos veterinários e estudantes de veterinária durante a triagem de pacientes. Responda sempre em português brasileiro, de forma direta, técnica e concisa." },
+              { role: "system", content: "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão. Responda sempre em português brasileiro, de forma direta, técnica e concisa." },
               { role: "user", content: prompt }
             ],
             max_tokens: 600,
