@@ -860,23 +860,68 @@
         "4. Sinais de alarme que indicam emergência\n\n" +
         "Responda de forma concisa e profissional, em português.";
 
+      // Lista de modelos com fallback automático.
+      // ":fastest" instrui o Router da Hugging Face a escolher
+      // sozinho um provider ativo (Together, Featherless, Novita etc.)
+      // que esteja servindo o modelo no momento da chamada.
+      const MODELOS_IA = [
+        "Qwen/Qwen2.5-7B-Instruct:fastest",
+        "meta-llama/Llama-3.1-8B-Instruct:fastest",
+        "deepseek-ai/DeepSeek-V3-0324:fastest"
+      ];
+
+      const systemPrompt = "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão. Responda sempre em português brasileiro, de forma direta, técnica e concisa.";
+
+      let resp = null;
+      let modeloUsado = null;
+      let ultimoErro = null;
+
       try {
-const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({
-            model: "mistralai/Mistral-7B-Instruct-v0.3",
-            messages: [
-              { role: "system", content: "Você é um médico veterinário clínico sênior atuando como consultor técnico dentro de um sistema profissional de apoio à decisão. Responda sempre em português brasileiro, de forma direta, técnica e concisa." },
-              { role: "user", content: prompt }
-            ],
-            max_tokens: 600,
-            temperature: 0.4
-          })
-        });
+        for (const modelo of MODELOS_IA) {
+          try {
+            const tentativa = await fetch("https://router.huggingface.co/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+              },
+              body: JSON.stringify({
+                model: modelo,
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: prompt }
+                ],
+                max_tokens: 600,
+                temperature: 0.4
+              })
+            });
+
+            if (tentativa.ok) {
+              resp = tentativa;
+              modeloUsado = modelo;
+              break;
+            } else {
+              ultimoErro = tentativa;
+              // Só tenta o próximo modelo em erros de disponibilidade/roteamento.
+              // Em erro de autenticação (401/403), não adianta trocar de modelo.
+              if (tentativa.status === 401 || tentativa.status === 403) {
+                resp = tentativa;
+                break;
+              }
+            }
+          } catch (fetchErr) {
+            ultimoErro = null;
+            continue;
+          }
+        }
+
+        if (!resp) {
+          resp = ultimoErro;
+        }
+
+        if (!resp) {
+          throw new Error("Não foi possível contatar nenhum modelo. Verifique sua conexão.");
+        }
 
         if (!resp.ok) {
           const errorText = await resp.text();
@@ -919,9 +964,11 @@ const resp = await fetch("https://router.huggingface.co/v1/chat/completions", {
           ? data.choices[0].message.content
           : "Resposta inesperada da IA.";
 
+        const nomeModeloExibicao = modeloUsado ? modeloUsado.replace(":fastest", "") : "IA";
+
         opiniaoIA.className = "alert alert-warning mt-3 result";
         opiniaoIA.innerHTML =
-          '<i class="bi bi-robot"></i> <strong>Opinião da IA (Llama 3.1):</strong>\n\n' + iaResponse;
+          '<i class="bi bi-robot"></i> <strong>Opinião da IA (' + nomeModeloExibicao + '):</strong>\n\n' + iaResponse;
 
       } catch (e) {
         opiniaoIA.className = "alert alert-danger mt-3 result";
